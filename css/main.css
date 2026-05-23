@@ -1,0 +1,165 @@
+/* Native CSS overrides - Premium Space/Cyberpunk Theme Edition */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #06080d;
+  color: #f3f4f6;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(0, 242, 254, 0.95);
+  color: #030712;
+}
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #06080d;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 254, 0.3);
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
+}
+
+/* Animated Deep Space Gradient Background */
+.animated-bg {
+  background: radial-gradient(circle at 10% 20%, rgba(161, 0, 255, 0.16) 0%, transparent 45%),
+              radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.16) 0%, transparent 45%),
+              radial-gradient(circle at 50% 50%, rgba(255, 0, 127, 0.08) 0%, transparent 50%),
+              #06080d;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+/* Premium Glassmorphism Panel styles */
+.glass-panel {
+  background: rgba(10, 14, 28, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-panel-hover:hover {
+  background: rgba(15, 21, 41, 0.75);
+  border-color: rgba(0, 242, 254, 0.35);
+  box-shadow: 0 20px 50px 0 rgba(0, 242, 254, 0.15), 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+  transform: translateY(-4px);
+}
+
+/* Glowing Cyber Border effect */
+.cyber-border-pink {
+  border: 1px solid rgba(255, 0, 127, 0.2);
+}
+.cyber-border-pink:hover {
+  border-color: rgba(255, 0, 127, 0.6);
+  box-shadow: 0 0 20px rgba(255, 0, 127, 0.25);
+}
+
+.cyber-border-cyan {
+  border: 1px solid rgba(0, 242, 254, 0.2);
+}
+.cyber-border-cyan:hover {
+  border-color: rgba(0, 242, 254, 0.6);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+}
+
+.cyber-border-purple {
+  border: 1px solid rgba(161, 0, 255, 0.2);
+}
+.cyber-border-purple:hover {
+  border-color: rgba(161, 0, 255, 0.6);
+  box-shadow: 0 0 20px rgba(161, 0, 255, 0.25);
+}
+
+/* Glowing Neon Typography */
+.text-glow-cyan {
+  text-shadow: 0 0 8px rgba(0, 242, 254, 0.45), 0 0 20px rgba(0, 242, 254, 0.15);
+}
+.text-glow-purple {
+  text-shadow: 0 0 8px rgba(161, 0, 255, 0.45), 0 0 20px rgba(161, 0, 255, 0.15);
+}
+.text-glow-pink {
+  text-shadow: 0 0 8px rgba(255, 0, 127, 0.45), 0 0 20px rgba(255, 0, 127, 0.15);
+}
+.text-glow-green {
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.45), 0 0 20px rgba(57, 255, 20, 0.15);
+}
+.text-glow-yellow {
+  text-shadow: 0 0 8px rgba(255, 234, 0, 0.45), 0 0 20px rgba(255, 234, 0, 0.15);
+}
+
+/* Custom Interactive Input Design */
+.custom-input {
+  background-color: rgba(6, 8, 13, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 0.85rem 1.1rem;
+  color: #ffffff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.custom-input:focus {
+  outline: none;
+  border-color: #00f2fe;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+  background-color: rgba(10, 14, 28, 0.8);
+}
+
+/* Circular Countdown Timer Styling */
+.timer-ring-circle {
+  transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* Page transitions entrance animations */
+.reveal-anim {
+  animation: reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Premium Profile Badge styling */
+.profile-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.3s ease;
+}
+.profile-stat-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
