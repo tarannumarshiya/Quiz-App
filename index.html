@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BattleQuiz - Real-Time Quiz Hub</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="BattleQuiz is a high-fidelity real-time quiz application. Create custom MCQ quizzes, share codes, challenge friends, and track your performance with interactive charts.">
+  
+  <!-- Font Imports -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            darkBg: '#06080d',
+            glassBg: 'rgba(10, 14, 28, 0.45)',
+            glassBorder: 'rgba(255, 255, 255, 0.08)',
+            neonCyan: '#00f2fe',
+            neonPurple: '#a100ff',
+            neonPink: '#ff007f',
+            neonGreen: '#39ff14',
+            neonYellow: '#ffea00',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+          },
+          backdropBlur: {
+            xs: '2px',
+          },
+          boxShadow: {
+            'neon-cyan': '0 0 15px rgba(0, 242, 254, 0.4)',
+            'neon-purple': '0 0 15px rgba(161, 0, 255, 0.4)',
+            'neon-pink': '0 0 15px rgba(255, 0, 127, 0.4)',
+            'neon-green': '0 0 15px rgba(57, 255, 20, 0.4)',
+            'neon-yellow': '0 0 15px rgba(255, 234, 0, 0.4)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow-cyan': 'glowCyan 2s ease-in-out infinite alternate',
+            'float': 'float 6s ease-in-out infinite',
+            'glow-pulse': 'glowPulse 2s infinite',
+          },
+          keyframes: {
+            glowCyan: {
+              '0%': { boxShadow: '0 0 5px rgba(0, 242, 254, 0.2)' },
+              '100%': { boxShadow: '0 0 20px rgba(0, 242, 254, 0.6)' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            glowPulse: {
+              '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+              '50%': { opacity: '1', transform: 'scale(1.02)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Firebase Compact SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <!-- Styling -->
+  <link rel="stylesheet" href="./src/css/main.css">
+<body class="animated-bg min-h-screen flex flex-col">
+  <!-- Cinematic Ambient floating orbs (UI/UX visual depth upgrade) -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div class="absolute top-[12%] left-[6%] w-[38vw] h-[38vw] rounded-full bg-neonPurple/10 blur-[120px] animate-float"></div>
+    <div class="absolute bottom-[15%] right-[8%] w-[38vw] h-[38vw] rounded-full bg-neonCyan/10 blur-[120px] animate-float" style="animation-delay: -3s;"></div>
+    <div class="absolute top-[45%] left-[45%] w-[32vw] h-[32vw] rounded-full bg-neonPink/5 blur-[110px] animate-pulse-slow"></div>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-50 border-b border-glassBorder bg-darkBg/80 backdrop-blur-md transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="#" id="brand-logo" class="flex items-center space-x-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-neonPurple to-neonCyan flex items-center justify-center shadow-neon-purple group-hover:scale-105 transition-transform duration-300">
+          <i class="fa-solid fa-gamepad text-white text-lg"></i>
+        </div>
+        <span class="font-display font-bold text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-neonCyan">BATTLE<span class="text-neonCyan text-glow-cyan">QUIZ</span></span>
+      </a>
+
+      <!-- Desktop Navigation Menu -->
+      <nav id="main-nav" class="hidden md:flex items-center space-x-1 lg:space-x-2">
+        <button id="nav-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"><i class="fa-solid fa-house mr-2"></i>Dashboard</button>
+        <button id="nav-search" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"><i class="fa-solid fa-magnifying-glass mr-2"></i>Search</button>
+        <button id="nav-create" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"><i class="fa-solid fa-plus-circle mr-2"></i>Create Quiz</button>
+        <button id="nav-leaderboard" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"><i class="fa-solid fa-trophy mr-2"></i>Leaderboards</button>
+        <button id="nav-profile" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"><i class="fa-solid fa-user-astronaut mr-2"></i>Profile & Stats</button>
+      </nav>
+
+      <!-- Utility Panel (Mute, User Status, Sign Out) -->
+      <div class="flex items-center space-x-4">
+        <!-- Audio Synthesizer Control -->
+        <button id="audio-toggle" class="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-900/60 border border-glassBorder text-gray-400 hover:text-white hover:border-neonCyan transition-all duration-200" title="Toggle Sound">
+          <i id="audio-icon" class="fa-solid fa-volume-high"></i>
+        </button>
+
+        <!-- User controls (Login/Profile status) -->
+        <div id="user-nav-status" class="flex items-center space-x-3 pl-2 border-l border-glassBorder">
+          <span class="text-sm text-gray-400">Loading...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Toast Alert -->
+  <div id="global-toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 px-5 py-4 rounded-xl glass-panel border-l-4 border-l-neonCyan shadow-neon-cyan max-w-sm pointer-events-none">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-neonCyan text-xl"></i>
+    <p id="toast-message" class="text-sm font-medium text-white"></p>
+  </div>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main class="flex-grow flex flex-col justify-center max-w-7xl mx-auto w-full px-6 py-8 relative">
+    
+    <!-- 1. FIREBASE CONFIG SETUP WIZARD VIEW -->
+    <section id="config-view" class="hidden w-full max-w-lg mx-auto reveal-anim">
+      <div class="glass-panel rounded-3xl p-8 relative overflow-hidden cyber-border-purple">
+        <!-- Accent circles -->
+        <div class="absolute -top-12 -left-12 w-28 h-28 rounded-full bg-neonPurple/20 blur-xl"></div>
+        <div class="absolute -bottom-12 -right-12 w-28 h-28 rounded-full bg-neonCyan/20 blur-xl"></div>
+
+        <div class="text-center mb-8 relative">
+          <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg mb-4">
+            <i class="fa-solid fa-database text-white text-2xl"></i>
+          </div>
+          <h2 class="font-display font-bold text-2xl text-white">Database Setup Required</h2>
+          <p class="text-sm text-gray-400 mt-2">Connect your custom Firebase Realtime Database to launch the quiz hub.</p>
+        </div>
+
+        <form id="config-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Firebase Configuration (JSON)</label>
+            <textarea id="config-json-input" placeholder="Paste your Firebase SDK config object here (firebaseConfig = { ... })" class="w-full h-40 bg-gray-950/70 border border-gray-800 rounded-xl px-4 py-3 text-xs font-mono text-emerald-400 focus:outline-none focus:border-neonCyan transition-all duration-200 placeholder-gray-600 resize-none"></textarea>
+          </div>
+          
+          <div class="flex items-center space-x-2 text-xs text-gray-500 bg-white/5 p-3 rounded-lg border border-white/5">
+            <i class="fa-solid fa-circle-info text-neonCyan"></i>
+            <span>This data is stored purely in your local browser and is never uploaded.</span>
+          </div>
+
+          <button type="submit" class="w-full bg-gradient-to-r from-neonPurple to-neonCyan text-white font-semibold py-3.5 rounded-xl shadow-neon-purple hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2">
+            <span>Connect Firebase Hub</span>
+            <i class="fa-solid fa-bolt"></i>
+          </button>
+        </form>
+        
+        <div class="mt-6 text-center text-xs text-gray-400">
+          <p>Don't have a Firebase project? <a href="https://console.firebase.google.com/" target="_blank" class="text-neonCyan hover:underline">Create one for free in 1 minute <i class="fa-solid fa-external-link text-[10px]"></i></a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. LOGIN / SIGN UP AUTH VIEW -->
+    <section id="auth-view" class="hidden w-full max-w-md mx-auto reveal-anim">
+      <!-- Glow Spheres behind card -->
+      <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-neonPurple/10 blur-3xl -z-10 animate-pulse-slow"></div>
+      <div class="absolute -bottom-12 -right-12 w-48 h-48 rounded-full bg-neonCyan/10 blur-3xl -z-10 animate-pulse-slow"></div>
+
+      <div class="glass-panel rounded-3xl p-8 relative overflow-hidden cyber-border-cyan">
+        
+        <!-- Auth Tabs -->
+        <div class="flex border-b border-glassBorder mb-8">
+          <button id="tab-login" class="flex-1 pb-4 text-center font-display font-semibold text-lg text-white border-b-2 border-neonCyan text-glow-cyan transition-all duration-300">Log In</button>
+          <button id="tab-register" class="flex-1 pb-4 text-center font-display font-semibold text-lg text-gray-400 border-b-2 border-transparent hover:text-white transition-all duration-300">Create Account</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-5">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Email Address</label>
+            <input type="email" id="login-email" required placeholder="name@email.com" class="w-full custom-input">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Password</label>
+            <input type="password" id="login-password" required placeholder="••••••••" class="w-full custom-input">
+          </div>
+          
+          <button type="submit" class="w-full mt-4 bg-gradient-to-r from-neonPurple to-neonCyan text-white font-semibold py-4 rounded-xl shadow-neon-purple hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2">
+            <span>Login</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="hidden space-y-5">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Username</label>
+            <input type="text" id="register-username" required placeholder="QuizMaster" class="w-full custom-input">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Email Address</label>
+            <input type="email" id="register-email" required placeholder="name@email.com" class="w-full custom-input">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Password</label>
+            <input type="password" id="register-password" required placeholder="Min. 6 characters" class="w-full custom-input">
+          </div>
+
+          <button type="submit" class="w-full mt-4 bg-gradient-to-r from-neonPurple to-neonPink text-white font-semibold py-4 rounded-xl shadow-neon-pink hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2">
+            <span>Sign Up</span>
+            <i class="fa-solid fa-user-plus"></i>
+          </button>
+        </form>
+
+        <!-- Google Auth Section -->
+        <div class="relative flex items-center justify-center my-6">
+          <div class="border-t border-glassBorder w-full"></div>
+          <span class="absolute bg-[#0a0e1c] px-3 text-xs text-gray-500 font-semibold uppercase tracking-wider">Or</span>
+        </div>
+        <button type="button" id="btn-google-auth" class="w-full bg-white/5 border border-glassBorder hover:border-neonCyan hover:bg-white/10 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 group active:scale-[0.98]">
+          <i class="fa-brands fa-google text-glow-pink text-lg group-hover:scale-110 transition-transform"></i>
+          <span>Log in with Google  </span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- 3. DASHBOARD VIEW -->
+    <section id="dashboard-view" class="hidden w-full max-w-6xl mx-auto space-y-8 reveal-anim">
+      <!-- Welcome Header & Stats metrics -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h1 class="font-display font-extrabold text-3xl md:text-4xl text-white">Welcome back, <span id="dash-username" class="text-transparent bg-clip-text bg-gradient-to-r from-neonCyan to-neonPurple text-glow-cyan">Explorer</span></h1>
+          <p class="text-sm text-gray-400 mt-1">Challenge yourself, build tests, and climb the scoreboard.</p>
+        </div>
+        <div class="flex gap-4 w-full md:w-auto">
+          <div class="flex-1 md:flex-none glass-panel px-6 py-4 rounded-2xl flex items-center space-x-4 border-l-4 border-l-neonCyan">
+            <div class="w-10 h-10 rounded-xl bg-neonCyan/10 flex items-center justify-center text-neonCyan text-lg"><i class="fa-solid fa-gamepad"></i></div>
+            <div>
+              <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Played</p>
+              <h3 id="dash-quizzes-count" class="font-bold text-xl text-white">0</h3>
+            </div>
+          </div>
+          <div class="flex-1 md:flex-none glass-panel px-6 py-4 rounded-2xl flex items-center space-x-4 border-l-4 border-l-neonPink">
+            <div class="w-10 h-10 rounded-xl bg-neonPink/10 flex items-center justify-center text-neonPink text-lg"><i class="fa-solid fa-star"></i></div>
+            <div>
+              <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Score</p>
+              <h3 id="dash-total-score" class="font-bold text-xl text-white">0</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Panel Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Join Quiz Card -->
+        <div class="glass-panel glass-panel-hover rounded-3xl p-8 relative overflow-hidden flex flex-col justify-between cyber-border-cyan">
+          <div class="absolute -top-16 -left-16 w-36 h-36 rounded-full bg-neonCyan/10 blur-2xl"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-neonCyan/15 flex items-center justify-center text-neonCyan shadow-md mb-6">
+              <i class="fa-solid fa-rocket text-xl"></i>
+            </div>
+            <h2 class="font-display font-bold text-2xl text-white">Join Active Room</h2>
+            <p class="text-sm text-gray-400 mt-2">Enter a unique game room code shared by your friends to test your speed and accuracy in real-time.</p>
+          </div>
+          
+          <div class="mt-8 space-y-4">
+            <div class="relative">
+              <input type="text" id="join-room-code" placeholder="QZ-ABCD" uppercase class="w-full text-center tracking-widest uppercase font-display font-bold text-xl py-4 bg-gray-950/60 border border-gray-800 rounded-2xl text-neonCyan focus:outline-none focus:border-neonCyan transition-all duration-300 placeholder-gray-600 focus:shadow-neon-cyan">
+              <i class="fa-solid fa-ticket absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 text-lg"></i>
+            </div>
+            
+            <button id="btn-join-room" class="w-full bg-gradient-to-r from-neonCyan to-neonPurple text-white font-bold py-4 rounded-2xl shadow-neon-cyan hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center space-x-2">
+              <span>Enter Quiz Arena</span>
+              <i class="fa-solid fa-play"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Create Quiz Card -->
+        <div class="glass-panel glass-panel-hover rounded-3xl p-8 relative overflow-hidden flex flex-col justify-between cyber-border-purple">
+          <div class="absolute -bottom-16 -right-16 w-36 h-36 rounded-full bg-neonPurple/10 blur-2xl"></div>
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-neonPurple/15 flex items-center justify-center text-neonPurple shadow-md mb-6">
+              <i class="fa-solid fa-square-plus text-xl"></i>
+            </div>
+            <h2 class="font-display font-bold text-2xl text-white">Create Custom Quiz</h2>
+            <p class="text-sm text-gray-400 mt-2">Generate your own MCQ tests in various subjects like Coding or Science, specify limits, and get a join code to challenge others.</p>
+          </div>
+
+          <div class="mt-8">
+            <button id="btn-goto-create" class="w-full bg-gradient-to-r from-neonPurple to-neonPink text-white font-bold py-4 rounded-2xl shadow-neon-purple hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center space-x-2">
+              <span>Launch Creator Studio</span>
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Tips and Global Leaderboard Sneak Peek -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 glass-panel rounded-3xl p-8 flex flex-col justify-between cyber-border-cyan">
+          <div>
+            <h3 class="font-display font-bold text-lg text-white mb-4"><i class="fa-solid fa-lightbulb text-amber-400 mr-2 animate-pulse"></i>Tips for Success</h3>
+            <ul class="space-y-4 text-sm text-gray-400">
+              <li class="flex items-start"><i class="fa-solid fa-circle-check text-neonGreen mt-1 mr-3 text-xs shadow-neon-green"></i><span><strong>Check the Time:</strong> Each question carries a countdown. Ticking speeds up as seconds run out!</span></li>
+              <li class="flex items-start"><i class="fa-solid fa-circle-check text-neonGreen mt-1 mr-3 text-xs shadow-neon-green"></i><span><strong>Practice makes Perfect:</strong> Navigate to the new <strong>Profile & Stats</strong> tab to view your mastery doughnut and radar graphs.</span></li>
+              <li class="flex items-start"><i class="fa-solid fa-circle-check text-neonGreen mt-1 mr-3 text-xs shadow-neon-green"></i><span><strong>Instant Hosting:</strong> Create tests, send codes to groups, and watch the leaderboard refresh in real time as they submit!</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-6 cyber-border-purple">
+          <h3 class="font-display font-bold text-lg text-white mb-4"><i class="fa-solid fa-ranking-star text-neonYellow mr-2"></i>Global Champions</h3>
+          
+          <div id="global-champs-list" class="space-y-3">
+            <p class="text-xs text-gray-500 text-center py-4">No global champions logged yet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. CREATE QUIZ STUDIO VIEW -->
+    <section id="create-quiz-view" class="hidden w-full max-w-4xl mx-auto reveal-anim">
+      <div class="glass-panel rounded-3xl p-8 relative overflow-hidden cyber-border-purple">
+        
+        <div class="flex justify-between items-center mb-8 border-b border-glassBorder pb-6">
+          <div>
+            <h1 class="font-display font-bold text-2xl text-white">Quiz Creator Studio</h1>
+            <p class="text-xs text-gray-400 mt-1">Design a multiple-choice challenge and share its join code.</p>
+          </div>
+          <button id="btn-cancel-create" class="px-4 py-2 bg-gray-900 border border-gray-800 rounded-xl text-xs text-gray-400 hover:text-white transition-all hover:border-rose-500/40"><i class="fa-solid fa-circle-chevron-left mr-2"></i>Cancel</button>
+        </div>
+
+        <!-- Creation Form -->
+        <form id="create-quiz-form" class="space-y-8">
+          
+          <!-- Step 1: Configuration details -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2 space-y-4">
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Quiz Title</label>
+                <input type="text" id="create-quiz-title" required placeholder="e.g. Modern Javascript Mastery" class="w-full custom-input">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Description (Optional)</label>
+                <textarea id="create-quiz-desc" placeholder="Brief explanation of what this test is about..." class="w-full h-20 bg-gray-950/60 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-neonCyan transition-all duration-200 resize-none focus:shadow-neon-cyan/10"></textarea>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Select Genre</label>
+                <select id="create-quiz-genre" class="w-full custom-input">
+                  <option value="Coding">Coding / Tech</option>
+                  <option value="General">General Knowledge</option>
+                  <option value="Science">Science & Math</option>
+                  <option value="History">History & Geo</option>
+                  <option value="Pop Culture">Pop Culture / Art</option>
+                  <option value="Other">Other / Misc</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Timer per Question</label>
+                <select id="create-quiz-time" class="w-full custom-input">
+                  <option value="15">15 Seconds</option>
+                  <option value="30" selected>30 Seconds</option>
+                  <option value="60">60 Seconds</option>
+                  <option value="120">2 Minutes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Questions Container -->
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b border-glassBorder pb-4 gap-4">
+              <h3 class="font-display font-semibold text-lg text-white">Questions Pool (<span id="question-count-badge" class="text-neonCyan">1</span>)</h3>
+              <div class="flex flex-wrap items-center gap-2">
+                <input type="file" id="import-questions-file" accept=".json" class="hidden">
+                <button type="button" id="btn-import-questions" class="bg-neonPurple/15 border border-neonPurple/30 text-neonPurple px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-neonPurple/30 hover:text-white active:scale-95 transition-all flex items-center"><i class="fa-solid fa-file-import mr-1.5"></i>Import JSON</button>
+                <button type="button" id="btn-export-questions" class="bg-amber-500/15 border border-amber-500/30 text-amber-500 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-amber-500/30 hover:text-white active:scale-95 transition-all flex items-center"><i class="fa-solid fa-file-export mr-1.5"></i>Export JSON</button>
+                <button type="button" id="btn-add-question" class="bg-neonCyan/10 border border-neonCyan/30 text-neonCyan px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-neonCyan/20 active:scale-95 transition-all flex items-center"><i class="fa-solid fa-plus-circle mr-1.5"></i>Add Question</button>
+              </div>
+            </div>
+
+            <div id="questions-list" class="space-y-6">
+              <div class="question-panel bg-white/5 border border-glassBorder rounded-2xl p-6 relative reveal-anim cyber-border-purple">
+                <div class="absolute -top-3 left-6 px-3 py-1 bg-neonPurple rounded-full text-[10px] font-bold tracking-wider uppercase">Question #1</div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-2">
+                  <div class="md:col-span-3 space-y-4">
+                    <div>
+                      <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Question Text</label>
+                      <input type="text" placeholder="e.g. Which keyword is used to declare block-scoped variables in JS?" required class="w-full bg-gray-950/40 border border-gray-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-neonCyan transition-all q-text-input">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Option A</label>
+                        <input type="text" placeholder="Option A" required class="w-full bg-gray-950/40 border border-gray-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-neonCyan transition-all q-opt-input" data-index="0">
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Option B</label>
+                        <input type="text" placeholder="Option B" required class="w-full bg-gray-950/40 border border-gray-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-neonCyan transition-all q-opt-input" data-index="1">
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Option C</label>
+                        <input type="text" placeholder="Option C" required class="w-full bg-gray-950/40 border border-gray-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-neonCyan transition-all q-opt-input" data-index="2">
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Option D</label>
+                        <input type="text" placeholder="Option D" required class="w-full bg-gray-950/40 border border-gray-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-neonCyan transition-all q-opt-input" data-index="3">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col justify-between">
+                    <div>
+                      <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Correct Option</label>
+                      <select class="w-full bg-gray-950/40 border border-gray-800 rounded-lg px-3 py-2.5 text-xs focus:outline-none focus:border-neonCyan transition-all q-correct-select">
+                        <option value="0">Option A</option>
+                        <option value="1">Option B</option>
+                        <option value="2">Option C</option>
+                        <option value="3">Option D</option>
+                      </select>
+                    </div>
+                    
+                    <button type="button" class="w-full mt-4 py-2 border border-rose-500/30 text-rose-400 bg-rose-950/10 hover:bg-rose-950/30 rounded-xl text-xs font-medium transition-all duration-200 btn-delete-question opacity-30 cursor-not-allowed" disabled>
+                      <i class="fa-solid fa-trash-can mr-2"></i>Delete Question
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="border-t border-glassBorder pt-6 flex justify-end">
+            <button type="submit" class="bg-gradient-to-r from-neonPurple via-neonPink to-neonYellow text-white font-bold px-8 py-4 rounded-2xl shadow-neon-purple hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2">
+              <span>Publish Quiz & Get Code</span>
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </section>
+
+    <!-- 5. ACTIVE QUIZ PLAYROOM VIEW -->
+    <section id="quiz-play-view" class="hidden w-full max-w-3xl mx-auto reveal-anim">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <span id="play-genre-badge" class="px-3 py-1 bg-neonPurple/20 border border-neonPurple/30 rounded-full text-xs font-bold text-neonPurple uppercase">Coding</span>
+          <h2 id="play-quiz-title" class="font-display font-bold text-xl text-white mt-1">Quiz Title</h2>
+        </div>
+        
+        <!-- Live circular countdown timer -->
+        <div class="relative w-16 h-16 flex items-center justify-center">
+          <svg class="w-full h-full">
+            <circle cx="32" cy="32" r="28" stroke="rgba(255, 255, 255, 0.05)" stroke-width="4" fill="none"/>
+            <circle id="timer-progress" cx="32" cy="32" r="28" stroke="#00f2fe" stroke-dasharray="176" stroke-dashoffset="0" stroke-width="4" fill="none" class="timer-ring-circle shadow-neon-cyan"/>
+          </svg>
+          <span id="play-timer-seconds" class="absolute font-display font-bold text-lg text-white">30</span>
+        </div>
+      </div>
+
+      <!-- Main Question Panel -->
+      <div class="glass-panel rounded-3xl p-8 relative overflow-hidden space-y-6 cyber-border-cyan">
+        <!-- Progress Bar -->
+        <div class="w-full">
+          <div class="flex justify-between text-xs text-gray-500 font-semibold mb-2">
+            <span id="play-question-num-txt">Question 1 of 5</span>
+            <span id="play-progress-percent">20%</span>
+          </div>
+          <div class="w-full bg-gray-950/60 h-2.5 rounded-full overflow-hidden border border-glassBorder">
+            <div id="play-progress-bar" class="h-full bg-gradient-to-r from-neonCyan to-neonPurple transition-all duration-300" style="width: 20%"></div>
+          </div>
+        </div>
+
+        <!-- Question Title -->
+        <h1 id="play-question-text" class="font-display font-bold text-xl md:text-2xl text-white text-glow-cyan leading-relaxed min-h-[60px]">
+          Loading question data...
+        </h1>
+
+        <!-- Options grid -->
+        <div id="play-options-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+          <button class="flex items-center space-x-4 p-5 rounded-2xl border border-gray-800 bg-gray-950/30 hover:border-neonCyan transition-all hover:bg-gray-900/40 text-left w-full group relative overflow-hidden">
+            <span class="w-8 h-8 rounded-lg bg-white/5 border border-glassBorder flex items-center justify-center font-display font-semibold text-sm text-gray-400 group-hover:text-neonCyan transition-colors">A</span>
+            <span class="text-sm text-gray-300 font-medium group-hover:text-white transition-colors">Placeholder option</span>
+          </button>
+        </div>
+
+        <!-- Next Button -->
+        <div class="flex justify-end pt-4 border-t border-glassBorder/50">
+          <button id="btn-next-question" class="bg-gradient-to-r from-neonCyan to-neonPurple text-white font-bold px-6 py-3 rounded-xl shadow-neon-cyan hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center space-x-2">
+            <span>Next Question</span>
+            <i class="fa-solid fa-angle-right"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. QUIZ RESULTS / ATTEMPT SUMMARY VIEW -->
+    <section id="results-view" class="hidden w-full max-w-2xl mx-auto reveal-anim">
+      <div class="glass-panel rounded-3xl p-8 relative overflow-hidden text-center space-y-6 cyber-border-green">
+        <div class="absolute -top-16 -left-16 w-36 h-36 bg-neonGreen/10 rounded-full blur-2xl"></div>
+
+        <div>
+          <div class="w-20 h-20 bg-neonGreen/10 rounded-full flex items-center justify-center text-neonGreen shadow-neon-green mx-auto mb-4 animate-bounce">
+            <i class="fa-solid fa-circle-check text-4xl"></i>
+          </div>
+          <h1 class="font-display font-bold text-3xl text-white">Quiz Completed!</h1>
+          <p id="result-quiz-title" class="text-sm text-gray-400 mt-1">Modern JS Basics</p>
+        </div>
+
+        <!-- Score Ring -->
+        <div class="py-6 flex flex-col items-center justify-center">
+          <div class="w-36 h-36 rounded-full border-4 border-dashed border-neonGreen/20 flex flex-col items-center justify-center">
+            <h2 id="result-score-percent" class="font-display font-extrabold text-4xl text-neonGreen text-glow-green">80%</h2>
+            <p id="result-score-fraction" class="text-xs text-gray-500 font-bold mt-1">4 of 5 Correct</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-left max-w-md mx-auto">
+          <div class="bg-white/5 p-4 rounded-xl border border-glassBorder text-center">
+            <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Total Correct</p>
+            <h3 id="result-correct-count" class="font-display font-bold text-xl text-white mt-1">0</h3>
+          </div>
+          <div class="bg-white/5 p-4 rounded-xl border border-glassBorder text-center">
+            <p class="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Subject Genre</p>
+            <h3 id="result-genre" class="font-display font-bold text-xl text-white mt-1">Coding</h3>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-4 pt-6 max-w-md mx-auto">
+          <button id="btn-review-answers" class="w-full bg-neonCyan/10 border border-neonCyan/30 text-neonCyan font-bold py-3.5 rounded-xl hover:bg-neonCyan/25 hover:text-white transition-all duration-200 flex items-center justify-center space-x-2 active:scale-98">
+            <i class="fa-solid fa-clipboard-question"></i>
+            <span>Review Question Sheet</span>
+          </button>
+          
+          <div class="flex gap-4 w-full">
+            <button id="btn-view-leaderboard" class="flex-1 bg-gradient-to-r from-neonCyan to-neonPurple text-white font-bold py-3.5 rounded-xl shadow-neon-cyan hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-trophy"></i>
+              <span>View Leaderboard</span>
+            </button>
+            
+            <button id="btn-result-dashboard" class="flex-1 bg-white/5 border border-glassBorder text-gray-300 font-bold py-3.5 rounded-xl hover:bg-white/10 hover:text-white transition-all flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-house"></i>
+              <span>Dashboard</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Collapsible Review Panel -->
+        <div id="review-answers-panel" class="hidden mt-8 text-left border-t border-glassBorder pt-6 space-y-4">
+          <h3 class="font-display font-bold text-lg text-white mb-4"><i class="fa-solid fa-square-poll-horizontal text-neonCyan mr-2"></i>Performance Review Sheet</h3>
+          <div id="review-list" class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <!-- Questions and answers will be injected here in real-time -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 7. LEADERBOARDS VIEW -->
+    <section id="leaderboard-view" class="hidden w-full max-w-4xl mx-auto space-y-8 reveal-anim">
+      <!-- Title & Scope Selector -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 class="font-display font-extrabold text-3xl text-white">The Leaderboard Arena</h1>
+          <p class="text-xs text-gray-400 mt-1">Real-time dynamic ranking scoreboard updates.</p>
+        </div>
+
+        <div class="flex gap-2 bg-gray-950/60 p-1.5 rounded-xl border border-glassBorder">
+          <button id="lead-scope-quiz" class="px-4 py-2 text-xs font-bold rounded-lg text-white bg-white/10 shadow-sm transition-all duration-200">Current Quiz Room</button>
+          <button id="lead-scope-global" class="px-4 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all duration-200">Global Hall of Fame</button>
+        </div>
+      </div>
+
+      <!-- Search Controls Grid -->
+      <div class="flex flex-col md:flex-row gap-6 w-full items-stretch">
+        <!-- Search Code Bar -->
+        <div id="lead-room-search-bar" class="flex-1 glass-panel p-4 rounded-2xl flex items-center gap-4 cyber-border-cyan">
+          <div class="flex-grow relative">
+            <input type="text" id="lead-quiz-id-input" placeholder="Enter Quiz ID (e.g. QZ-ABCD)" class="w-full bg-gray-950/50 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm uppercase text-neonCyan focus:outline-none focus:border-neonCyan transition-all tracking-wider placeholder-gray-600">
+            <i class="fa-solid fa-hashtag absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+          </div>
+          <button id="btn-lead-search" class="px-5 py-2.5 bg-gradient-to-r from-neonCyan to-neonPurple text-white rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center shrink-0">
+            <i class="fa-solid fa-magnifying-glass mr-2"></i>Search Room
+          </button>
+        </div>
+
+        <!-- Search Player Bar -->
+        <div id="lead-player-search-bar" class="flex-1 glass-panel p-4 rounded-2xl flex items-center gap-4 cyber-border-pink">
+          <div class="flex-grow relative">
+            <input type="text" id="lead-player-name-input" placeholder="Search Player by Name..." class="w-full bg-gray-950/50 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-neonPink focus:outline-none focus:border-neonPink transition-all placeholder-gray-600">
+            <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+          </div>
+          <button id="btn-lead-player-search" class="px-5 py-2.5 bg-gradient-to-r from-neonPink to-neonPurple text-white rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center shrink-0">
+            <i class="fa-solid fa-user-tag mr-2"></i>Filter Players
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Room Details Banner -->
+      <div id="lead-quiz-details" class="hidden glass-panel p-6 rounded-3xl border border-neonPurple/30 shadow-neon-purple flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span id="lead-badge-genre" class="px-2.5 py-0.5 bg-neonPurple/20 border border-neonPurple/30 text-[10px] font-bold text-neonPurple uppercase rounded-full">Coding</span>
+          <h2 id="lead-text-title" class="font-display font-bold text-xl text-white mt-1">Quiz Room Code</h2>
+          <p id="lead-text-desc" class="text-xs text-gray-400 mt-1">Quiz description</p>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-semibold text-gray-500 uppercase tracking-widest block">Access Join Code</span>
+          <h3 id="lead-text-code" class="font-display font-extrabold text-2xl text-neonCyan text-glow-cyan tracking-wider mt-1">QZ-ABCD</h3>
+        </div>
+      </div>
+
+      <!-- Podium & Rankings Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Physical Podium card -->
+        <div class="glass-panel rounded-3xl p-6 flex flex-col justify-center items-center min-h-[400px] relative overflow-hidden cyber-border-purple">
+          <div class="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-neonPurple/5 blur-3xl"></div>
+          
+          <h3 class="font-display font-bold text-lg text-white mb-8 border-b border-glassBorder pb-2 w-full text-center">Top Performers Podium</h3>
+
+          <div class="flex items-end justify-center w-full mt-4 h-64 gap-3">
+            <!-- 2nd place -->
+            <div class="flex flex-col items-center flex-1">
+              <div id="podium-2-avatar" class="w-12 h-12 rounded-full border-2 border-slate-400 bg-slate-950/60 flex items-center justify-center font-display font-bold text-slate-400 relative mb-2">2</div>
+              <div class="text-center mb-1 max-w-[80px] truncate">
+                <p id="podium-2-name" class="text-xs font-semibold text-gray-300">--</p>
+                <p id="podium-2-score" class="text-[10px] text-slate-400 font-bold">--</p>
+              </div>
+              <div class="w-full bg-slate-800/40 border border-slate-700/50 rounded-t-xl h-24 flex items-center justify-center flex-col">
+                <i class="fa-solid fa-medal text-slate-400 text-xl shadow-lg"></i>
+                <span class="text-[10px] font-bold text-slate-400 mt-2">2nd</span>
+              </div>
+            </div>
+
+            <!-- 1st place -->
+            <div class="flex flex-col items-center flex-1">
+              <div id="podium-1-avatar" class="w-14 h-14 rounded-full border-2 border-neonYellow bg-amber-950/30 flex items-center justify-center font-display font-bold text-neonYellow relative mb-2 shadow-neon-yellow">
+                1
+                <i class="fa-solid fa-crown absolute -top-4 left-1/2 -translate-x-1/2 text-neonYellow text-md animate-bounce"></i>
+              </div>
+              <div class="text-center mb-1 max-w-[90px] truncate">
+                <p id="podium-1-name" class="text-xs font-semibold text-white">--</p>
+                <p id="podium-1-score" class="text-[10px] text-neonYellow font-bold">--</p>
+              </div>
+              <div class="w-full bg-amber-500/10 border border-amber-500/30 rounded-t-xl h-36 flex items-center justify-center flex-col shadow-neon-yellow">
+                <i class="fa-solid fa-crown text-neonYellow text-2xl"></i>
+                <span class="text-[10px] font-bold text-neonYellow mt-2">CHAMP</span>
+              </div>
+            </div>
+
+            <!-- 3rd place -->
+            <div class="flex flex-col items-center flex-1">
+              <div id="podium-3-avatar" class="w-12 h-12 rounded-full border-2 border-orange-500 bg-orange-950/60 flex items-center justify-center font-display font-bold text-orange-500 relative mb-2">3</div>
+              <div class="text-center mb-1 max-w-[80px] truncate">
+                <p id="podium-3-name" class="text-xs font-semibold text-gray-300">--</p>
+                <p id="podium-3-score" class="text-[10px] text-orange-500 font-bold">--</p>
+              </div>
+              <div class="w-full bg-orange-900/20 border border-orange-800/40 rounded-t-xl h-18 flex items-center justify-center flex-col">
+                <i class="fa-solid fa-medal text-orange-500 text-lg"></i>
+                <span class="text-[10px] font-bold text-orange-500 mt-2">3rd</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standings Table -->
+        <div class="lg:col-span-2 glass-panel rounded-3xl p-6 flex flex-col justify-between cyber-border-cyan">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-glassBorder pb-4 text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                  <th class="pb-3 text-center w-12">Rank</th>
+                  <th class="pb-3 pl-4">Player</th>
+                  <th class="pb-3 text-center">Score</th>
+                  <th class="pb-3 text-right">Attempt Time</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-rows-list">
+                <tr>
+                  <td colspan="4" class="text-center text-gray-500 text-sm py-10">No leaderboard entries found for this query.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 8. DEDICATED PROFILE & OPERATIONS COMMAND CENTER -->
+    <section id="profile-view" class="hidden w-full max-w-6xl mx-auto space-y-8 reveal-anim">
+      <!-- Title header -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 class="font-display font-extrabold text-3xl text-white">Player Profile Hub</h1>
+          <p class="text-xs text-gray-400 mt-1">Real-time statistics calculations and high-fidelity visualizers.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Profile Identity Card -->
+        <div class="glass-panel rounded-3xl p-8 relative overflow-hidden flex flex-col justify-between cyber-border-purple min-h-[460px]">
+          <div class="absolute -top-12 -left-12 w-28 h-28 rounded-full bg-neonPurple/10 blur-xl"></div>
+          
+          <div class="text-center pb-6 border-b border-glassBorder relative">
+            <div id="prof-avatar-badge" class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-neonPurple via-neonPink to-neonYellow flex items-center justify-center shadow-neon-purple text-white font-display font-extrabold text-3xl mb-4 uppercase">
+              ?
+            </div>
+            <h2 id="prof-username-txt" class="font-display font-bold text-2xl text-white">Loading User...</h2>
+            <p id="prof-email-txt" class="text-sm text-gray-500 mt-1">username@battlequiz.com</p>
+            <span class="inline-block mt-3 px-3 py-1 bg-neonPurple/15 border border-neonPurple/30 text-neonPurple rounded-full text-xs font-bold uppercase tracking-wider text-glow-purple">Active Competitor</span>
+          </div>
+
+          <div class="py-6 space-y-4">
+            <div class="flex justify-between items-center text-sm border-b border-glassBorder/20 pb-3">
+              <span class="text-gray-500 font-bold uppercase text-[10px] tracking-wider">Total Score Points</span>
+              <span id="prof-metric-total-score" class="font-bold text-white text-glow-cyan text-base">0</span>
+            </div>
+            <div class="flex justify-between items-center text-sm border-b border-glassBorder/20 pb-3">
+              <span class="text-gray-500 font-bold uppercase text-[10px] tracking-wider">Preferred Subject Domain</span>
+              <span id="prof-metric-fav-genre" class="font-bold text-neonPink text-glow-pink">None</span>
+            </div>
+            <div class="flex justify-between items-center text-sm border-b border-glassBorder/20 pb-3">
+              <span class="text-gray-500 font-bold uppercase text-[10px] tracking-wider">Quizzes Played</span>
+              <span id="prof-metric-quizzes" class="font-bold text-neonCyan text-glow-cyan">0</span>
+            </div>
+            <div class="flex justify-between items-center text-sm pb-1">
+              <span class="text-gray-500 font-bold uppercase text-[10px] tracking-wider">Overall Accuracy Rate</span>
+              <span id="prof-metric-avg" class="font-bold text-neonGreen text-glow-green">0%</span>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-glassBorder">
+            <!-- <button id="btn-prof-reset-config" class="w-full py-3.5 bg-rose-950/20 border border-rose-900/30 text-rose-400 font-bold rounded-xl text-xs hover:bg-rose-950/30 hover:text-white transition-all flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-power-off"></i>
+              <span>Reset Database Connection</span>
+            </button> -->
+          </div>
+        </div>
+
+        <!-- The Analytical charts command grid -->
+        <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          <!-- Accuracy Doughnut Chart Card -->
+          <div class="glass-panel rounded-3xl p-6 space-y-4 cyber-border-cyan flex flex-col justify-between min-h-[300px]">
+            <div class="border-b border-glassBorder pb-2 flex justify-between items-center">
+              <h3 class="font-display font-bold text-sm text-white">Questions Accuracy Ratio</h3>
+              <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Doughnut Graph</span>
+            </div>
+            <div class="relative h-[220px] w-full flex items-center justify-center">
+              <canvas id="accuracyDoughnutChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Subject Mastery Radar Chart Card -->
+          <div class="glass-panel rounded-3xl p-6 space-y-4 cyber-border-pink flex flex-col justify-between min-h-[300px]">
+            <div class="border-b border-glassBorder pb-2 flex justify-between items-center">
+              <h3 class="font-display font-bold text-sm text-white">Subject Domain Mastery Profile</h3>
+              <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Radar Analysis</span>
+            </div>
+            <div class="relative h-[220px] w-full flex items-center justify-center">
+              <canvas id="genreRadarChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Line chart card (Full span width across base grid) -->
+          <div class="md:col-span-2 glass-panel rounded-3xl p-6 space-y-4 cyber-border-purple min-h-[320px]">
+            <div class="border-b border-glassBorder pb-2 flex justify-between items-center">
+              <h3 class="font-display font-bold text-sm text-white">Chronological Score Progression</h3>
+              <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Trend Lines</span>
+            </div>
+            <div class="relative h-[240px] w-full flex items-center justify-center">
+              <canvas id="historyLineChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Played Quizzes History & Analysis Card -->
+          <div class="md:col-span-2 glass-panel rounded-3xl p-6 space-y-6 cyber-border-green min-h-[350px]">
+            <div class="border-b border-glassBorder pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 class="font-display font-bold text-lg text-white">Recent Played Quizzes History & Analysis</h3>
+                <p class="text-[10px] text-gray-400 mt-1">Detailed accuracy reports and custom mini charts for each attempted room.</p>
+              </div>
+              <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest sm:text-right">Quiz Audit Logs</span>
+            </div>
+            
+            <div id="profile-history-list" class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+              <div class="text-center py-12 text-gray-500 text-sm">
+                <i class="fa-solid fa-circle-notch animate-spin mr-2"></i>Accessing quiz attempt history...
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modern footer -->
+
+  <!-- App bootstrap -->
+  <script type="module" src="./src/js/app.js"></script>
+</body>
+</html>
