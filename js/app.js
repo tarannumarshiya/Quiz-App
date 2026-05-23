@@ -626,7 +626,7 @@ function setupCreateQuizStudio() {
         optionsInputs.forEach(input => {
           options.push(input.value.trim());
         });
-
+console.log("added page");
         questions.push({
           questionText: textVal,
           options: options,
